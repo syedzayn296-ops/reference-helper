@@ -121,6 +121,7 @@ ul{margin:0;padding:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 [hidden]{display:none!important}
+.lookrow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.lookrow .field{flex:1 1 260px}.lookrow .btn{height:42px}
 </style>
 
 </head>
@@ -131,6 +132,14 @@ ul{margin:0;padding:0}
     <p class="lede">Fill in what you can see on the book, article or page. You get the in-text citation and the reference-list entry, in the Harvard style from the STADIO Referencing Guide 2026 (Cite Them Right, 13th edition).</p>
   </header>
   <p class="note"><strong>Unofficial helper.</strong> It follows the guide's formulas, but the guide, your lecturer and your assessment brief come first. Check every reference against the source itself before you hand in.</p>
+
+  <section class="card" aria-labelledby="h-look">
+    <h2 id="h-look" style="margin:0 0 6px">Start from a link, DOI or ISBN</h2>
+    <p class="lede" style="margin:0 0 12px;font-size:.92rem">Paste a web link, a YouTube link, a DOI (journal articles) or an ISBN (books). The tool reads the real details from the source and fills in the form below. It never guesses or invents anything.</p>
+    <div class="lookrow"><div class="field"><label for="lookInput">Link, DOI or ISBN</label><input id="lookInput" type="text" placeholder="https://...  or  10.1080/...  or  978..." autocomplete="off"></div><button class="btn" id="lookBtn" type="button">Fill in for me</button></div>
+    <p id="lookStatus" class="msg good" role="status" hidden style="margin-top:10px"></p>
+    <details class="hint" style="margin-top:8px"><summary>What can it read, and what can't it?</summary><p>Journal articles (DOI) and books (ISBN) work best. A YouTube link gives the title and the channel, but you must type the year it was uploaded. For web pages it depends on the site: many show the title, author and date, some block automatic reading or hide the date. Edition and page numbers are never found automatically, so you add them. To read a web page the tool asks a free public relay service to open it for you, so do not paste links that contain passwords or personal details.</p></details>
+  </section>
 
   <section aria-labelledby="h-type">
     <h2 id="h-type">What are you referencing?</h2>
@@ -668,6 +677,179 @@ document.getElementById('clearList').addEventListener('click',function(ev){
   if(!clearArmed){clearArmed=true;b.textContent='Click again to clear';clearTimer=setTimeout(function(){clearArmed=false;b.textContent='Clear list'},3000);return}
   clearTimeout(clearTimer);clearArmed=false;b.textContent='Clear list';list=[];saveList();renderList();renderPreview();
 });
+
+/* ---------- fill the form from a link, DOI or ISBN ---------- */
+var PROXY='https://api.allorigins.win/raw?url=';
+var lookEl=document.getElementById('lookInput'),lookBtn=document.getElementById('lookBtn'),lookStat=document.getElementById('lookStatus');
+function say(msg,kind){lookStat.textContent=msg;lookStat.className='msg '+(kind||'good');lookStat.hidden=!msg}
+function fetchT(url,ms){
+  var c=new AbortController(),t=setTimeout(function(){c.abort()},ms||12000);
+  return fetch(url,{signal:c.signal}).then(function(r){clearTimeout(t);return r},function(e){clearTimeout(t);throw e});
+}
+function getJson(url){return fetchT(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+function year4(x){var m=String(x||'').match(/\b(1[5-9]\d\d|20\d\d)\b/);return m?m[1]:''}
+function cleanTitle(t){return strip(String(t||'')).replace(/\s+/g,' ').trim()}
+function splitName(n){
+  n=String(n||'').replace(/\(.*?\)/g,'').replace(/,?\s*(Jr|Sr|PhD|MD)\.?$/i,'').trim();
+  if(!n)return {sn:'',ini:''};
+  if(n.indexOf(',')>0){var p=n.split(',');return {sn:p[0].trim(),ini:givenToIni(p.slice(1).join(' '))}}
+  var w=n.split(/\s+/);
+  if(w.length===1)return {sn:w[0],ini:''};
+  var sn=w.pop();
+  while(w.length>1&&/^(van|von|de|der|den|du|la|le|di|da|al|bin|ibn)$/i.test(w[w.length-1]))sn=w.pop()+' '+sn;
+  return {sn:sn,ini:givenToIni(w.join(' '))};
+}
+function givenToIni(g){return String(g||'').split(/[\s\-.]+/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+'.'}).join('')}
+function peopleFrom(list){return list.map(splitName).filter(function(p){return p.sn})}
+var ORG_WORDS=/\b(inc|ltd|llc|pty|department|university|college|news|times|council|ministry|group|team|staff|press|institute|association|foundation|government|agency|company|corporation|bureau|commission|organisation|organization)\b/i;
+
+function fromCrossref(doi){
+  return getJson('https://api.crossref.org/works/'+encodeURIComponent(doi)).then(function(j){
+    var m=j.message||{},t=m.type||'';
+    var dp=(m.issued||m['published-print']||m['published-online']||{})['date-parts'];
+    var y=dp&&dp[0]&&dp[0][0]?String(dp[0][0]):'';
+    var title=cleanTitle((m.title||[])[0]);
+    if(m.subtitle&&m.subtitle[0])title+=': '+cleanTitle(m.subtitle[0]);
+    var container=cleanTitle((m['container-title']||[])[0]);
+    var au=(m.author||[]),eds=(m.editor||[]);
+    function ppl(list){return list.filter(function(a){return a.family}).map(function(a){return {sn:a.family,ini:givenToIni(a.given||'')}})}
+    var r={authors:ppl(au),f:{year:y,title:title}};
+    if(!r.authors.length&&au.length&&au[0].name){r.mode='org';r.org=au[0].name}
+    if(/^(book|monograph|edited-book|reference-book|book-set)$/.test(t)){
+      r.type='book';r.f.publisher=m.publisher||'';
+      if(m['edition-number'])r.f.edition=String(m['edition-number']);
+      if(!r.authors.length&&eds.length){r.authors=ppl(eds);r.isEditor=true}
+    }else if(t==='book-chapter'){
+      r.type='chapter';r.f.chTitle=title;r.f.title='';r.f.bookTitle=container;r.f.publisher=m.publisher||'';r.f.pages=m.page||'';
+      r.eds=ppl(eds);
+    }else{
+      r.type='journal';r.f.journal=container;r.f.volume=m.volume||'';r.f.issue=m.issue||'';r.f.pages=m.page||m['article-number']||'';
+      r.f.link='https://doi.org/'+(m.DOI||doi);
+    }
+    return r;
+  });
+}
+function fromIsbn(isbn){
+  return getJson('https://openlibrary.org/api/books?bibkeys=ISBN:'+isbn+'&format=json&jscmd=data').then(function(j){
+    var d=j['ISBN:'+isbn];if(!d)throw new Error('none');
+    return {type:'book',authors:peopleFrom((d.authors||[]).map(function(a){return a.name})),
+      f:{year:year4(d.publish_date),title:cleanTitle(d.title+(d.subtitle?': '+d.subtitle:'')),publisher:((d.publishers||[])[0]||{}).name||''}};
+  }).catch(function(){
+    return getJson('https://www.googleapis.com/books/v1/volumes?q=isbn:'+isbn).then(function(j){
+      var v=j.items&&j.items[0]&&j.items[0].volumeInfo;if(!v)throw new Error('none');
+      return {type:'book',authors:peopleFrom(v.authors||[]),
+        f:{year:year4(v.publishedDate),title:cleanTitle(v.title+(v.subtitle?': '+v.subtitle:'')),publisher:v.publisher||''}};
+    });
+  });
+}
+function cleanYt(u){
+  var m=u.match(/youtu\.be\/([\w-]{6,})/)||u.match(/[?&]v=([\w-]{6,})/)||u.match(/youtube\.com\/(?:shorts|embed)\/([\w-]{6,})/);
+  return m?'https://www.youtube.com/watch?v='+m[1]:u;
+}
+function fromYouTube(url){
+  var clean=cleanYt(url);
+  return getJson('https://noembed.com/embed?url='+encodeURIComponent(clean)).then(function(j){
+    if(!j.title)throw new Error('none');
+    return {type:'video',mode:'org',org:j.author_name||'',f:{title:cleanTitle(j.title),url:clean}};
+  });
+}
+function ldItems(doc){
+  var out=[];
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(function(sc){
+    try{(function walk(x){if(Array.isArray(x))return x.forEach(walk);if(x&&typeof x==='object'){out.push(x);if(x['@graph'])walk(x['@graph'])}})(JSON.parse(sc.textContent))}catch(e){}
+  });
+  return out;
+}
+function esc2(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function parsePage(html,url){
+  var doc=new DOMParser().parseFromString(html,'text/html');
+  function meta(){
+    for(var i=0;i<arguments.length;i++){
+      var e=doc.querySelector('meta[name="'+arguments[i]+'"],meta[property="'+arguments[i]+'"],meta[itemprop="'+arguments[i]+'"]');
+      if(e&&e.getAttribute('content')&&e.getAttribute('content').trim())return e.getAttribute('content').trim();
+    }
+    return '';
+  }
+  var doi=meta('citation_doi');
+  if(!doi){var di=meta('dc.identifier','DC.Identifier');if(/10\.\d{4,9}\//.test(di))doi=di}
+  var dm=doi.match(/10\.\d{4,9}\/[^\s"<>]+/);
+  var ld=ldItems(doc),art=ld.filter(function(x){return x.datePublished||x.headline||x.author})[0]||{};
+  var names=[].slice.call(doc.querySelectorAll('meta[name="citation_author"]')).map(function(e){return e.getAttribute('content')});
+  if(!names.length){
+    var a1=meta('author','article:author','dc.creator','DC.creator');
+    if(a1&&!/^https?:/i.test(a1))names=[a1];
+  }
+  if(!names.length&&art.author){
+    var al=Array.isArray(art.author)?art.author:[art.author];
+    names=al.map(function(a){return typeof a==='string'?a:(a&&a.name)||''});
+  }
+  names=names.filter(function(n){return n&&n.length<80&&!/^https?:/i.test(n)});
+  var host=''; try{host=new URL(url).hostname.replace(/^www\./,'')}catch(e){}
+  var site=meta('og:site_name','application-name')||host;
+  var title=meta('citation_title','og:title','twitter:title')||(doc.title||'');
+  title=cleanTitle(title);
+  if(site)title=title.replace(new RegExp('\\s*[|\\u2013\\u2014-]\\s*'+esc2(site)+'\\s*$','i'),'');
+  var y=year4(meta('citation_publication_date','citation_date','article:published_time','og:article:published_time','datePublished','dc.date','DC.date','dcterms.created'))||year4(art.datePublished)||year4(meta('article:modified_time','og:updated_time'))||year4(art.dateModified);
+  var r={type:'web',f:{year:y,title:title,url:url},doi:dm?dm[0].replace(/[.,;]+$/,''):''};
+  var personNames=names.filter(function(n){return !ORG_WORDS.test(n)});
+  if(personNames.length&&personNames.length===names.length){r.authors=peopleFrom(personNames)}
+  else{r.mode='org';r.org=names.length===1?names[0]:site}
+  return r;
+}
+function fromPage(url){
+  return fetchT(PROXY+encodeURIComponent(url),15000).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(html){
+    if(!html||html.length<200)throw new Error('empty');
+    return parsePage(html,url);
+  });
+}
+function applyResult(r,label){
+  var st=newState(r.type);
+  if(r.mode==='org'){st.mode='org';st.org=r.org||''}
+  else if(r.authors&&r.authors.length){st.mode='persons';st.authors=r.authors}
+  if(r.isEditor)st.isEditor=true;
+  if(r.eds&&r.eds.length)st.eds=r.eds;
+  Object.keys(r.f||{}).forEach(function(k){if(r.f[k])st.f[k]=r.f[k]});
+  s=st;renderTypes();renderForm();renderPreview();
+  var b=lastBuilt,need=b.M.length?' Still missing: '+b.M.map(function(m){return m.replace(/^Add (the )?/,'').replace(/\.$/,'')}).join('; ')+'.':'';
+  say('Filled in from '+label+'. Check every box against the real source before you add it.'+need,b.M.length?'warn':'good');
+  try{document.getElementById('types').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}catch(e){}
+}
+function fail(raw,type,extra){
+  s=newState(type);if(type==='web'||type==='video')s.f.url=raw;
+  renderTypes();renderForm();renderPreview();
+  say(extra,'warn');
+}
+function lookup(){
+  var raw=lookEl.value.trim();
+  if(!raw){say('Paste a link, a DOI or an ISBN first.','warn');return}
+  var digits=raw.replace(/[\s-]/g,''),doiM=raw.match(/10\.\d{4,9}\/[^\s"<>]+/);
+  var isDoi=doiM&&(/^(doi:\s*)?10\./i.test(raw)||/^https?:\/\/(dx\.)?doi\.org\//i.test(raw));
+  var isIsbn=/^(97[89])?\d{9}[\dXx]$/.test(digits)&&!/[A-WYZa-wyz]/.test(raw);
+  var isYt=/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(raw);
+  var isUrl=/^https?:\/\//i.test(raw);
+  lookBtn.disabled=true;say('Looking it up…','good');
+  var done=function(){lookBtn.disabled=false};
+  if(isDoi){
+    var doi=doiM[0].replace(/[.,;]+$/,'');
+    fromCrossref(doi).then(function(r){applyResult(r,'Crossref (the DOI registry)')},function(){fail(raw,'journal','I could not find that DOI. Check it for typing mistakes, or fill in the boxes by hand.')}).then(done,done);
+  }else if(isIsbn){
+    fromIsbn(digits).then(function(r){applyResult(r,'the book catalogue')},function(){fail(raw,'book','I could not find a book with that ISBN. Check the number, or fill in the boxes by hand.')}).then(done,done);
+  }else if(isYt){
+    fromYouTube(raw).then(function(r){applyResult(r,'the video page')},function(){fail(raw,'video','I could not read that video. The link has been put in for you: add the title, channel and year by hand.')}).then(done,done);
+  }else if(isUrl){
+    fromPage(raw).then(function(r){
+      if(r.doi){
+        return fromCrossref(r.doi).then(function(c){applyResult(c,'the DOI registry (this page is a journal article)')},function(){applyResult(r,'the web page')});
+      }
+      applyResult(r,'the web page');
+    },function(){fail(raw,'web','I could not read that page. Some websites block automatic reading. The link has been put in for you: add the title, author and year by hand.')}).then(done,done);
+  }else{
+    say('That does not look like a link, a DOI or an ISBN. A link starts with https://, a DOI starts with 10., an ISBN is 10 or 13 digits.','warn');done();
+  }
+}
+lookBtn.addEventListener('click',lookup);
+lookEl.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();lookup()}});
+window.__h.parsePage=parsePage;
 
 renderTypes();renderForm();renderPreview();renderList();
 })();

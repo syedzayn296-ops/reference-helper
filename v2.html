@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reference Helper v2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: one working column (form) beside a sticky live preview; the saved list sits below. */
+:root{
+  --bg:#f3f5f8;
+  --surface:#ffffff;
+  --ink:#17202b;
+  --muted:#556270;
+  --line:#d6dde6;
+  --accent:#1c5bb8;
+  --accent-ink:#ffffff;
+  --accent-soft:#e4edfb;
+  --hi:#fff0b3;
+  --warn:#7a4e00;
+  --warn-bg:#fff4d3;
+  --bad:#a5311f;
+  --bad-bg:#fde8e4;
+  --ok:#1d6b3b;
+  --ok-bg:#e1f3e8;
+  --ui:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --doc:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10161d;--surface:#18212b;--ink:#e8edf3;--muted:#9aa8b6;--line:#2d3947;
+    --accent:#7fb0ff;--accent-ink:#0c1522;--accent-soft:#1c2e47;--hi:#4a3f12;
+    --warn:#f0c46a;--warn-bg:#3a2f12;--bad:#ff9d8c;--bad-bg:#40211d;--ok:#7fd69b;--ok-bg:#173324;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10161d;--surface:#18212b;--ink:#e8edf3;--muted:#9aa8b6;--line:#2d3947;
+  --accent:#7fb0ff;--accent-ink:#0c1522;--accent-soft:#1c2e47;--hi:#4a3f12;
+  --warn:#f0c46a;--warn-bg:#3a2f12;--bad:#ff9d8c;--bad-bg:#40211d;--ok:#7fd69b;--ok-bg:#173324;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.5;
+  padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1{font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:1.15rem;margin:0 0 10px;letter-spacing:.01em}
+h3{font-size:.8rem;margin:0 0 6px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+p{margin:0}
+.lede{color:var(--muted);max-width:64ch;margin-top:8px}
+.note{background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:.92rem;max-width:80ch}
+.note strong{font-weight:600}
+.types{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.type{font:inherit;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0}
+.type b{display:block;font-weight:600}
+.type span{display:block;font-size:.8rem;color:var(--muted)}
+.type[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.type:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.work{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.form{display:flex;flex-direction:column;gap:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.full{grid-column:1/-1}
+label,.lab{font-size:.88rem;font-weight:600}
+input[type=text],input[type=date],select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input::placeholder{color:var(--muted);opacity:.7}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;font-weight:500}
+.check input{margin-top:4px;width:18px;height:18px;flex:none}
+details.hint{font-size:.85rem;color:var(--muted)}
+details.hint summary{cursor:pointer;color:var(--accent);width:max-content;max-width:100%}
+details.hint p{margin-top:4px;max-width:60ch}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{font-weight:500;display:flex;gap:6px;align-items:center;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;background:var(--bg)}
+.seg input{accent-color:var(--accent)}
+.seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.people{display:flex;flex-direction:column;gap:8px}
+.person{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+.btn{font:inherit;font-weight:600;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:9px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:.85rem}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.x{font:inherit;border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:8px 10px;cursor:pointer}
+.preview{position:sticky;top:12px;display:flex;flex-direction:column;gap:14px}
+.out{font-family:var(--doc);font-size:1.02rem;line-height:1.55;background:var(--bg);border-radius:8px;padding:10px 12px;overflow-wrap:anywhere}
+.out.main{background:var(--accent-soft)}
+.ph{background:var(--hi);border-radius:4px;padding:0 3px;font-family:var(--ui);font-size:.85em}
+.line{display:flex;flex-direction:column;gap:5px}
+.line .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.line .muted{font-size:.85rem;color:var(--muted)}
+.msgs{display:flex;flex-direction:column;gap:6px}
+.msg{font-size:.88rem;border-radius:8px;padding:8px 10px}
+.msg.need{background:var(--bad-bg);color:var(--bad)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.msg.good{background:var(--ok-bg);color:var(--ok)}
+.listhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.entry{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:8px}
+.entry:first-of-type{border-top:0}
+.entry .out{background:transparent;padding:0}
+.entry .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
+.tag{background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:1px 9px;font-weight:600}
+.empty{color:var(--muted);padding:8px 0}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;font-size:.9rem}
+.rules li{margin-left:1.1em}
+ul{margin:0;padding:0}
+.foot{font-size:.82rem;color:var(--muted);max-width:80ch}
+@media (max-width:860px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .preview{position:static}
+}
+@media (max-width:480px){
+  .person{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .person .x{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+[hidden]{display:none!important}
+.v2{display:inline-block;vertical-align:middle;background:#b45309;color:#fff;font:700 .75rem/1 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:5px 11px;margin-left:8px}.newnote{background:#fff7e6;border:1px solid #f0c36d;border-radius:10px;padding:10px 14px;margin:0 0 14px;font-size:.92rem;color:#3b2a05}.lookrow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.lookrow .field{flex:1 1 260px}.lookrow .btn{height:42px}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Reference Helper <span class="v2">Version 2</span></h1>
+    <p class="lede">Fill in what you can see on the book, article or page. You get the in-text citation and the reference-list entry, in the Harvard style from the STADIO Referencing Guide 2026 (Cite Them Right, 13th edition).</p>
+  </header>
+  <p class="newnote"><strong>New in Version 2:</strong> seven more source types. Newspaper article, Government publication, Thesis or dissertation, Lecture notes or slides, Email or chat message, Image, Podcast or radio. Look for the new buttons in step 1. The original version is still at the main link.</p>
+  <p class="note"><strong>Unofficial helper.</strong> It follows the guide's formulas, but the guide, your lecturer and your assessment brief come first. Check every reference against the source itself before you hand in.</p>
+
+  <section class="card" aria-labelledby="h-look">
+    <h2 id="h-look" style="margin:0 0 6px">Start from a link, DOI or ISBN</h2>
+    <p class="lede" style="margin:0 0 12px;font-size:.92rem">Paste a web link, a YouTube link, a DOI (journal articles) or an ISBN (books). The tool reads the real details from the source and fills in the form below. It never guesses or invents anything.</p>
+    <div class="lookrow"><div class="field"><label for="lookInput">Link, DOI or ISBN</label><input id="lookInput" type="text" placeholder="https://...  or  10.1080/...  or  978..." autocomplete="off"></div><button class="btn" id="lookBtn" type="button">Fill in for me</button></div>
+    <p id="lookStatus" class="msg good" role="status" hidden style="margin-top:10px"></p>
+    <details class="hint" style="margin-top:8px"><summary>What can it read, and what can't it?</summary><p>Journal articles (DOI) and books (ISBN) work best. A YouTube link gives the title and the channel, but you must type the year it was uploaded. For web pages it depends on the site: many show the title, author and date, some block automatic reading or hide the date. Edition and page numbers are never found automatically, so you add them. To read a web page the tool asks a free public relay service to open it for you, so do not paste links that contain passwords or personal details.</p></details>
+  </section>
+
+  <section aria-labelledby="h-type">
+    <h2 id="h-type">What are you referencing?</h2>
+    <div class="types" id="types"></div>
+  </section>
+
+  <section class="work" aria-label="Reference builder">
+    <div class="card form" id="form"></div>
+    <aside class="preview" id="preview" aria-live="polite"></aside>
+  </section>
+
+  <section class="card" aria-labelledby="h-list">
+    <div class="listhead">
+      <h2 id="h-list" style="margin:0">My reference list</h2>
+      <div class="actions">
+        <button class="btn small" id="copyList" type="button">Copy whole list</button>
+        <button class="btn ghost small" id="clearList" type="button">Clear list</button>
+      </div>
+    </div>
+    <div id="list"></div>
+    <details class="hint" style="margin-top:10px">
+      <summary>How the list must look in your assignment</summary>
+      <ul class="rules" style="margin-top:8px">
+        <li>Heading <b>Reference list:</b> on the last page, bold, not underlined, left aligned, with a colon, one font size larger than your text.</li>
+        <li>Single line spacing, left aligned, one blank line between entries.</li>
+        <li>Alphabetical by author. Every source appears once, however often you cite it.</li>
+        <li>Every in-text citation needs an entry, and the first two items (author, year) must match.</li>
+        <li>Pictures: use a separate image reference list after it (see the guide, section 3.7).</li>
+      </ul>
+    </details>
+    <p class="foot" style="margin-top:10px">This list is saved only in this browser on this device. Copy it into your assignment before you clear it or switch devices.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var TYPES=[
+ {id:'book',name:'Book',desc:'Printed or e-book'},
+ {id:'chapter',name:'Book chapter',desc:'Chapter in an edited book'},
+ {id:'journal',name:'Journal article',desc:'Academic article'},
+ {id:'web',name:'Web page',desc:'Page on a website'},
+ {id:'blog',name:'Blog or forum post',desc:'Also social media posts'},
+ {id:'video',name:'YouTube video',desc:'Any online video'},
+ {id:'news',name:'Newspaper article',desc:'Printed or online',v2:1},
+ {id:'gov',name:'Government publication',desc:'Act, policy, report',v2:1},
+ {id:'thesis',name:'Thesis or dissertation',desc:'University work',v2:1},
+ {id:'lecture',name:'Lecture notes or slides',desc:'From your module',v2:1},
+ {id:'email',name:'Email or chat',desc:'Email, WhatsApp, Teams',v2:1},
+ {id:'image',name:'Image',desc:'Photo, figure, graphic',v2:1},
+ {id:'podcast',name:'Podcast or radio',desc:'Audio programme',v2:1},
+ {id:'ai',name:'AI use',desc:'How to declare it'}
+];
+var HINT={
+ authors:'Take the names exactly as printed on the title page, in the same order. For "Thomas Mohr" type Mohr as the surname and T as the initial. Leave out titles like Dr or Prof.',
+ year_book:'Open the book and find the copyright page: the page right after the title page, with the © sign. Use the year of the edition you are holding.',
+ edition:'Same copyright page. Look for words like "2nd edition" or "Second edition". If it does not say, it is the first edition: leave this blank.',
+ publisher:'On the copyright page or at the bottom of the title page. Type only the name, for example Juta. Leave out the city.',
+ page:'Use the number printed on the page where you found the idea, not the counter in your PDF viewer. One page: 45. Several in a row: 45-46. Separate pages: 1, 4, 6.',
+ chapter_pages:'The first and last page of the whole chapter, for example 140-159. You find them in the contents page.',
+ editors:'The editors are named on the cover or title page, followed by (ed) or (eds). The chapter\'s own author goes in the author box above.',
+ j_vol:'Printed at the top of the first page of the article, or on the journal website. "Vol. 54, No. 11" means volume 54, issue 11. If you cannot find an issue, leave it blank. Use the month box only if both volume and issue are unknown.',
+ j_pages:'The first and last page of the whole article, for example 1732-1739. It is shown on the first page of the article.',
+ j_link:'A DOI looks like 10.1080/00131857.2020.1824781. It is on the first page of the article or on the database page. You can paste it with or without https://doi.org/. If you read it online, add the date you accessed it.',
+ web_author:'Use the person who wrote the page. If no person is named, use the organisation that runs the website (look at "About us" or the footer). If neither, choose "No author" and the title is used instead.',
+ web_year:'Look for "Published" or "Last updated", or the © year at the bottom of the page. If nothing at all, leave blank and it will say "no date".',
+ web_title:'The main heading of the page itself, not the name of the website.',
+ acc:'The day you opened and read the page. It is filled in with today\'s date.',
+ blog_date:'The full date the post was written, shown near its title. Blogs and social media use the full date, not just the year.',
+ blog_title:'For a blog post use its title. For a social media post use the first five words followed by ... (see the guide, section 6.13).',
+ platform:'The blog name or the platform, for example FashionLady, Instagram, Facebook or X.',
+ v_author:'The channel name shown under the video, or the person if the video names them.',
+ v_year:'The year the video was uploaded. It shows under the video.',
+ v_time:'Where in the video the idea appears, as hours:minutes:seconds, for example 00:03:36.'
+};
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function ph(l){return '<span class="ph">['+esc(l)+']</span>'}
+function strip(h){var d=document.createElement('div');d.innerHTML=h;return d.textContent||''}
+function joinAnd(a){if(a.length<=1)return a[0]||'';return a.slice(0,-1).join(', ')+' and '+a[a.length-1]}
+function fmtIni(s){var m=(s||'').match(/[A-Za-zÀ-ɏ]/g)||[];return m.map(function(c){return c.toUpperCase()+'.'}).join('')}
+function fmtLong(iso){var m=(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '';return parseInt(m[3],10)+' '+MONTHS[parseInt(m[2],10)-1]+' '+m[1]}
+function fmtDots(iso){var m=(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '';return m[3]+'.'+m[2]+'.'+m[1]}
+function dayMonth(iso){var m=(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '';return parseInt(m[3],10)+' '+MONTHS[parseInt(m[2],10)-1]}
+function monthFirst(iso){var m=(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '';return MONTHS[parseInt(m[2],10)-1]+' '+parseInt(m[3],10)}
+function yearOf(iso){var m=(iso||'').match(/^(\d{4})/);return m?m[1]:''}
+function ordinal(n){var v=n%100;var suf=(v>=11&&v<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return n+suf}
+function editionStr(e){e=(e||'').trim();if(!e)return '';var m=e.match(/\d+/);if(m){var n=parseInt(m[0],10);if(n<=1)return '';return ordinal(n)+' edn'}return esc(e)+' edn'}
+function pagesRef(v){v=(v||'').trim();if(!v)return '';v=v.replace(/\s*[-–—]\s*/g,'–');return (/[–,]/.test(v)?'pp. ':'p. ')+esc(v)}
+function linkNorm(x){x=(x||'').trim().replace(/^doi:\s*/i,'');if(/^10\.\d{4,9}\//.test(x))return 'https://doi.org/'+x;return x}
+function tcWarn(t){var w=(t||'').split(/\s+/).filter(function(x){return x.length>3&&/^[A-Za-z]/.test(x)});if(w.length<4)return false;var caps=w.slice(1).filter(function(x){return /^[A-Z]/.test(x)}).length;return caps/(w.length-1)>0.6}
+function todayIso(){var t=new Date();return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2)}
+function applyS(h,s){return String(h).split('{{S}}').join(s||'')}
+
+/* ---------- state ---------- */
+function newState(type){
+  var loc=type==='web'?'para':(type==='video'||type==='podcast')?'time':(type==='blog'||type==='email'||type==='image')?'none':'page';
+  return {type:type,mode:(type==='web'||type==='video'||type==='gov')?'org':'persons',authors:[{sn:'',ini:''}],org:'',isEditor:false,
+    eds:[{sn:'',ini:''}],f:{acc:todayIso(),ttype:'Thesis',medium:(type==='lecture'?'Presentation slides':type==='image'?'Online image':type==='podcast'?'Podcast':''),type:'Email'},loc:{kind:loc,value:'',counted:false},
+    ai:{mode:'tool',tool:'',company:'',ver:'',url:'',date:'',sn:'',ini:'',full:'',desc:'',fig:''}};
+}
+var s=newState('book');
+var list=[];
+try{var raw=localStorage.getItem('refhelper.list.v1');if(raw)list=JSON.parse(raw)||[]}catch(e){list=[]}
+function saveList(){try{localStorage.setItem('refhelper.list.v1',JSON.stringify(list))}catch(e){}}
+
+/* ---------- building ---------- */
+function authorBlock(st){
+  if(st.mode==='none')return {none:true,n:0};
+  if(st.mode==='org'){var o=(st.org||'').trim();if(!o)return {empty:true,n:0};return {org:true,ref:esc(o),first:esc(o),next:esc(o),n:1}}
+  var L=st.authors.filter(function(a){return a.sn&&a.sn.trim()});
+  if(!L.length)return {empty:true,n:0};
+  var rn=L.map(function(a){var i=fmtIni(a.ini);return esc(a.sn.trim())+(i?', '+i:'')});
+  var ref=joinAnd(rn);
+  if(st.isEditor)ref+=' ('+(L.length>1?'eds':'ed')+')';
+  var sn=L.map(function(a){return esc(a.sn.trim())});
+  var first=joinAnd(sn);
+  var next=sn.length>=4?sn[0]+' <i>et al.</i>':first;
+  return {ref:ref,first:first,next:next,n:L.length};
+}
+function locText(l){
+  if(!l||l.kind==='none'||!l.value||!l.value.trim())return '';
+  var v=l.value.trim();
+  if(l.kind==='page'){v=v.replace(/\s*[-–—]\s*/g,'–');var multi=/[–,]/.test(v);if(l.counted)v='['+v+']';return (multi?'pp. ':'p.')+v}
+  if(l.kind==='para')return 'para. '+v;
+  if(l.kind==='time')return v;
+  return '';
+}
+function mkCites(a,title,when,loc,suffix){
+  var L=[],S=suffix?'{{S}}':'',tail=loc?', '+esc(loc):'';
+  var nm=a.none?esc(title):(a.first||ph('author')),nm2=a.none?esc(title):(a.next||ph('author')),four=a.n>=4;
+  L.push({label:four?'In your text, first time (information first)':'In your text (information first)',html:'('+nm+', '+when+S+tail+')'});
+  if(a.org)L.push({label:'Author first',note:'Not used for organisations. Put the citation at the end of the sentence instead.'});
+  else if(!a.none)L.push({label:four?'In your text, first time (author first)':'In your text (author first)',html:nm+' ('+when+S+tail+')'});
+  if(four){
+    L.push({label:'Every time after that (information first)',html:'('+nm2+', '+when+S+tail+')'});
+    L.push({label:'Every time after that (author first)',html:nm2+' ('+when+S+tail+')'});
+  }
+  return L;
+}
+function g(st,k){return (st.f[k]||'').trim()}
+function yr(st){return esc(g(st,'year'))||'no date'}
+var MSG_AUTH='Add the author(s), or choose "No author" if the source does not name one.';
+function result(a,M,W,ref,cites,key,when,title){
+  var plainKey=strip(a.ref||esc(title||'')).toLowerCase().replace(/^[^a-z0-9]+/,'');
+  var names=a.none?(title||''):strip(a.first||'');
+  return {ref:ref,cites:cites,M:M,W:W,sort:plainKey,cKey:names?names.toLowerCase()+'|'+when:''};
+}
+function bBook(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title');
+  if(a.empty)M.push(MSG_AUTH);
+  if(!t)M.push('Add the title of the book.');
+  if(!g(st,'year'))W.push('No year yet. Check the copyright page, the one right after the title page. If there really is none, the reference will say "no date".');
+  if(!g(st,'publisher'))W.push('No publisher yet. Check the copyright page. If there really is none, it shows [no publisher].');
+  if(t&&tcWarn(t))W.push('Titles use sentence case: only the first word and proper names get capital letters. Fix the title if the book has capitals on every word.');
+  var title=t?esc(t):ph('title'),ed=editionStr(g(st,'edition')),pub=g(st,'publisher')?esc(g(st,'publisher')):'[no publisher]',out;
+  if(a.none)out='<i>'+title+'</i> ('+y+'{{S}})';
+  else out=(a.empty?ph('author'):a.ref)+' ('+y+'{{S}}) <i>'+title+'</i>.';
+  if(ed)out+=' '+ed+'.';
+  out+=' '+pub+'.';
+  if(st.f.online){
+    var u=linkNorm(g(st,'url')),acc=fmtLong(g(st,'acc'));
+    if(!u)M.push('Add the link or DOI, or untick "I read it online".');
+    if(!acc)M.push('Add the date you accessed it.');
+    out+=' Available at: '+(u?esc(u):ph('link'))+' (Accessed: '+(acc||ph('date'))+').';
+  }
+  if(!locText(st.loc)&&st.loc.kind!=='none')W.push('If you quote or paraphrase a specific part, add the page number. The guide asks for it.');
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bChapter(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),ch=g(st,'chTitle'),bk=g(st,'bookTitle');
+  if(a.empty)M.push('Add the author of the chapter (not the editor).');
+  if(!ch)M.push('Add the title of the chapter.');
+  if(!bk)M.push('Add the title of the book.');
+  var eds=st.eds.filter(function(e){return e.sn&&e.sn.trim()});
+  if(!eds.length)M.push('Add the editor(s) of the book.');
+  if(!g(st,'year'))W.push('No year yet. Check the copyright page of the book.');
+  if(!g(st,'pages'))W.push('Add the first and last page of the chapter.');
+  if(bk&&tcWarn(bk))W.push('Book titles use sentence case.');
+  var edTxt=eds.length?joinAnd(eds.map(function(e){var i=fmtIni(e.ini);return (i?i+' ':'')+esc(e.sn.trim())}))+' ('+(eds.length>1?'eds':'ed')+')':ph('editor(s)');
+  var ed=editionStr(g(st,'edition')),pub=g(st,'publisher')?esc(g(st,'publisher')):'[no publisher]';
+  var head=a.none?"'"+(ch?esc(ch):ph('chapter title'))+"' ("+y+'{{S}})':(a.empty?ph('author'):a.ref)+' ('+y+"{{S}}) '"+(ch?esc(ch):ph('chapter title'))+"'";
+  var out=head+', in '+edTxt+', <i>'+(bk?esc(bk):ph('book title'))+'</i>.';
+  if(ed)out+=' '+ed+'.';
+  out+=' '+pub;
+  var pg=pagesRef(g(st,'pages'));if(pg)out+=', '+pg;
+  out+='.';
+  if(!locText(st.loc)&&st.loc.kind!=='none')W.push('Cite the page where you found the idea. The in-text citation uses the chapter author, not the editor.');
+  return result(a,M,W,out,mkCites(a,ch||'title',y,locText(st.loc),true),'',y,ch);
+}
+function bJournal(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),j=g(st,'journal');
+  if(a.empty)M.push(MSG_AUTH);
+  if(!t)M.push('Add the title of the article.');
+  if(!j)M.push('Add the name of the journal.');
+  if(!g(st,'year'))W.push('No year yet. It is on the first page of the article.');
+  if(!g(st,'volume')&&!g(st,'month'))W.push('No volume yet. It is printed at the top of the first page of the article or on the journal website.');
+  if(!g(st,'pages'))W.push('Add the first and last page of the article, for example 1732-1739.');
+  if(t&&tcWarn(t))W.push('The article title uses sentence case: only the first word and proper names get capitals. The journal name keeps its own capitals.');
+  var vol=g(st,'volume'),iss=g(st,'issue'),mon=g(st,'month'),vi='';
+  if(vol)vi=esc(vol)+(iss?'('+esc(iss)+')':(mon?'('+esc(mon)+')':''));else if(mon)vi=esc(mon);
+  var title="'"+(t?esc(t):ph('article title'))+"'",jn='<i>'+(j?esc(j):ph('journal'))+'</i>',out;
+  if(a.none)out=title+' ('+y+'{{S}}) '+jn;
+  else out=(a.empty?ph('author'):a.ref)+' ('+y+'{{S}}) '+title+', '+jn;
+  var tail=[];if(vi)tail.push(vi);var pg=pagesRef(g(st,'pages'));if(pg)tail.push(pg);
+  if(tail.length)out+=', '+tail.join(', ');
+  out+='.';
+  var u=linkNorm(g(st,'link'));
+  if(u){
+    var acc=fmtLong(g(st,'acc'));
+    if(!acc)M.push('Add the date you accessed it.');
+    out+=' Available at: '+esc(u)+' (Accessed: '+(acc||ph('date'))+').';
+  }
+  if(!locText(st.loc)&&st.loc.kind!=='none')W.push('If you quote or paraphrase a specific part, add the page number.');
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bWeb(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),u=g(st,'url'),acc=fmtLong(g(st,'acc'));
+  if(a.empty)M.push(MSG_AUTH);
+  if(!t)M.push('Add the title of the page.');
+  if(!u)M.push('Add the link (URL) of the page.');
+  if(!acc)M.push('Add the date you accessed it.');
+  if(!g(st,'year'))W.push('No year yet. Look for "Published", "Last updated" or the © year at the bottom. If nothing, it will say "no date".');
+  if(st.mode==='org')W.push('A website is not a good source on its own. The guide asks for valid and reliable sources, so prefer books, journals and official publications.');
+  if(t&&tcWarn(t))W.push('Use sentence case for the title.');
+  var title='<i>'+(t?esc(t):ph('title'))+'</i>',out;
+  var tailTxt=' Available at: '+(u?esc(u):ph('link'))+' ('+'Accessed: '+(acc||ph('date'))+').';
+  if(a.none)out=title+' ('+y+'{{S}})'+tailTxt;
+  else out=(a.empty?ph('author'):a.ref)+' ('+y+'{{S}}) '+title+'.'+tailTxt;
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bBlog(st){
+  var a=authorBlock(st),M=[],W=[],t=g(st,'title'),pf=g(st,'platform'),u=g(st,'url'),acc=fmtLong(g(st,'acc'));
+  var when=fmtDots(g(st,'date'))||'no date';
+  if(a.empty||a.none)M.push('Add the author, or the username or blog name.');
+  if(!t)M.push('Add the title of the post (or its first five words and ...).');
+  if(!pf)M.push('Add the blog or platform name (it goes in square brackets).');
+  if(!u)M.push('Add the link (URL) of the post.');
+  if(!acc)M.push('Add the date you accessed it.');
+  if(!g(st,'date'))W.push('No date yet. Blogs and social posts use the full date, written day.month.year.');
+  W.push('The guide says social media and blogs are not valid, reliable sources. Use them only if your assessment brief asks you to.');
+  var out=(a.empty||a.none?ph('author'):a.ref)+' ('+esc(when)+") '"+(t?esc(t):ph('title'))+"' ["+(pf?esc(pf):ph('platform'))+']. Available at: '+(u?esc(u):ph('link'))+' (Accessed: '+(acc||ph('date'))+').';
+  return result(a,M,W,out,mkCites(a,t||'title',esc(when),'',false),'',esc(when),t);
+}
+function bVideo(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),u=g(st,'url'),acc=fmtLong(g(st,'acc'));
+  if(a.empty)M.push('Add the creator or channel name, or choose "No author".');
+  if(!t)M.push('Add the title of the video.');
+  if(!u)M.push('Add the link (URL) of the video.');
+  if(!acc)M.push('Add the date you accessed it.');
+  if(!g(st,'year'))W.push('No year yet. Use the year the video was uploaded.');
+  if(!locText(st.loc)&&st.loc.kind!=='none')W.push('Add a time stamp so your marker can find the exact moment, for example 00:03:36.');
+  var title='<i>'+(t?esc(t):ph('title'))+'</i>',tail=' [Online video]. Available at: '+(u?esc(u):ph('link'))+' (Accessed: '+(acc||ph('date'))+').',out;
+  if(a.none)out=title+' ('+y+'{{S}})'+tail;
+  else out=(a.empty?ph('author'):a.ref)+' ('+y+'{{S}}) '+title+tail;
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bAI(st){
+  var x=st.ai,M=[],W=[],cites=[],ref='',date=x.date,yy=yearOf(date);
+  var need=function(v,m){if(!(v||'').trim())M.push(m)};
+  need(x.tool,'Add the name of the AI tool.');
+  need(x.company,'Add the company that makes it.');
+  if(!date)M.push('Add the date you used it.');
+  var tool=x.tool.trim()?esc(x.tool.trim()):ph('tool'),co=x.company.trim()?esc(x.company.trim()):ph('company'),Y=yy||ph('year');
+  if(x.mode==='tool'){
+    var ver=x.ver.trim(),url=x.url.trim();
+    cites.push({label:'In your text',html:tool+' ('+co+', '+Y+') was used to …'});
+    ref=co+'. ('+Y+', '+(date?monthFirst(date):ph('date'))+'). '+tool+(ver?' (Version '+esc(ver)+')':'')+' [Large language model].'+(url?' '+esc(url):'');
+  }else if(x.mode==='chat'){
+    need(x.sn,'Add your own surname.');
+    var ini=fmtIni(x.ini),who=x.sn.trim()?esc(x.sn.trim()):ph('surname');
+    cites.push({label:'In your text',html:'In an interaction with '+co+"'s "+tool+', the system responded with … ('+who+', '+(date?dayMonth(date)+' '+yy:ph('date'))+')'});
+    ref=who+(ini?', '+ini:'')+' ('+Y+') Discussion with '+co+' '+tool+', '+(date?dayMonth(date):ph('date'))+'.';
+    W.push('Put screenshots of the whole chat (your prompts and the AI\'s answers) after your reference list.');
+  }else{
+    need(x.desc,'Describe what was made, for example "Swopout event poster".');
+    need(x.full,'Add your full name.');
+    var d=x.desc.trim()?esc(x.desc.trim()):ph('description');
+    cites.push({label:'Caption under the image',html:'Figure '+(esc(x.fig.trim())||'1')+': '+tool+' ('+Y+'). '+d+'.'});
+    cites.push({label:'Thumbnail method',note:'No caption needed if a thumbnail of the image sits next to this entry in your image reference list.'});
+    ref=tool+' ('+Y+') '+d+' [Digital artwork]. Created for '+(x.full.trim()?esc(x.full.trim()):ph('your name'))+', '+(date?dayMonth(date):ph('date'))+'.';
+    W.push('Only allowed if the AI traffic light (AIMat) in your assessment brief says so. Put screenshots of the prompts and results after the reference list.');
+  }
+  W.push('AI is not a source you can reference. Declare that you used it, follow the traffic light in your brief, and check every fact and reference it gave you against real sources.');
+  return {ref:ref,cites:cites,M:M,W:W,sort:strip(ref).toLowerCase().replace(/^[^a-z0-9]+/,''),cKey:'',ai:true};
+}
+function onlineTail(st,M){
+  var u=linkNorm(g(st,'url')),acc=fmtLong(g(st,'acc'));
+  if(!u)M.push('Add the link, or untick "I read it online".');
+  if(!acc)M.push('Add the date you accessed it.');
+  return ' Available at: '+(u?esc(u):ph('link'))+' (Accessed: '+(acc||ph('date'))+').';
+}
+function optTail(st,M){
+  var u=linkNorm(g(st,'url'));
+  if(!u)return '';
+  var acc=fmtLong(g(st,'acc'));
+  if(!acc)M.push('Add the date you accessed it.');
+  return ' Available at: '+esc(u)+' (Accessed: '+(acc||ph('date'))+').';
+}
+function bNews(st){
+  var a0=authorBlock(st),a=a0,M=[],W=[],paper=g(st,'paper'),t=g(st,'title'),date=g(st,'date'),y=yearOf(date)||'no date';
+  var pn=paper?esc(paper):ph('newspaper');
+  if(a0.none)a={org:true,ref:pn,first:pn,next:pn,n:1};
+  else if(a0.empty)M.push(MSG_AUTH);
+  if(!t)M.push('Add the headline.');
+  if(!paper)M.push('Add the name of the newspaper.');
+  if(!date)M.push('Add the date of the newspaper (day, month and year).');
+  if(t&&tcWarn(t))W.push('Use sentence case for the headline: only the first word and proper names get capitals.');
+  var dm=dayMonth(date),pg=pagesRef(g(st,'pages')),ed=g(st,'edition');
+  if(!pg&&!st.f.online)W.push('Add the page number of the article in the printed paper.');
+  var out=(a0.empty?ph('author'):a.ref)+' ('+y+"{{S}}) '"+(t?esc(t):ph('headline'))+"', <i>"+pn+'</i>'+(ed?', '+esc(ed):'')+(dm?', '+dm:'')+(pg?', '+pg:'')+'.';
+  if(st.f.online)out+=onlineTail(st,M);
+  return result(a,M,W,out,mkCites(a,t||'headline',y,locText(st.loc),true),'',y,t);
+}
+function bGov(st){
+  var a=authorBlock(st);if(a.none)a={empty:true,n:0};
+  var M=[],W=[],y=yr(st),t=g(st,'title'),short=g(st,'short'),ser=g(st,'series'),pub=g(st,'publisher');
+  if(a.empty)M.push('Add the name of the government body or department.');
+  if(!t)M.push('Add the title of the document.');
+  if(!g(st,'year'))W.push('No year yet. Look on the cover or the first page.');
+  W.push('For your in-text citation the guide often uses a short name, for example (South Africa, 2011, p.36) or (CHE, 2023, p.19). Use the short-name box if your lecturer expects that.');
+  var a2=a.empty?a:{org:true,ref:a.ref,first:short?esc(short):a.first,next:short?esc(short):a.next,n:1};
+  var out=(a.empty?ph('organisation'):a.ref)+' ('+y+'{{S}}) <i>'+(t?esc(t):ph('title'))+'</i>'+(ser?' ('+esc(ser)+')':'')+'.';
+  if(pub)out+=' '+esc(pub)+'.';else if(!st.f.online)out+=' [no publisher].';
+  if(st.f.online)out+=onlineTail(st,M);
+  return result(a2,M,W,out,mkCites(a2,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bThesis(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),q=g(st,'qual'),ty=g(st,'ttype')||'Thesis',u=g(st,'univ');
+  if(a.empty)M.push(MSG_AUTH);
+  if(!t)M.push('Add the title of the thesis.');
+  if(!u)M.push('Add the name of the university.');
+  if(!q)W.push('Add the qualification, for example Master\'s in Education.');
+  if(!g(st,'year'))W.push('No year yet. It is on the title page.');
+  if(t&&tcWarn(t))W.push('Use sentence case for the title.');
+  var kind=st.f.online?ty.toLowerCase():ty;
+  var out=(a.empty?ph('author'):a.ref)+' ('+y+'{{S}}) <i>'+(t?esc(t):ph('title'))+'</i>. '+(q?esc(q)+' ':'')+kind+': '+(u?esc(u):ph('university'))+'.';
+  if(st.f.online)out+=onlineTail(st,M);
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bLecture(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),md=g(st,'medium')||'Presentation slides',code=g(st,'code'),mt=g(st,'modtitle'),inst=g(st,'inst'),dm=dayMonth(g(st,'date'));
+  if(a.empty)M.push('Add the lecturer or presenter.');
+  if(!t)M.push('Add the title of the slides, notes or lecture.');
+  if(!mt)M.push('Add the module title.');
+  if(!inst)M.push('Add the institution.');
+  if(!g(st,'year'))W.push('No year yet. Use the year the lecture or slides were made.');
+  W.push('If the lecturer is quoting another author, go to that original source where you can. The guide treats relying on lecture notes as a secondary source (section 3.16).');
+  var out=(a.empty?ph('lecturer'):a.ref)+' ('+y+"{{S}}) '"+(t?esc(t):ph('title'))+"' ["+esc(md)+']. '+(code?esc(code)+': ':'')+(mt?'<i>'+esc(mt)+'</i>':ph('module title'))+'. '+(inst?esc(inst):ph('institution'))+'.'+(dm?' '+dm+'.':'');
+  out+=optTail(st,M);
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+function bEmail(st){
+  var a=authorBlock(st);if(a.none)a={empty:true,n:0};
+  var M=[],W=[],ty=g(st,'type')||'Email',date=g(st,'date'),y=yearOf(date)||'no date',subj=g(st,'subject'),rsn=g(st,'rsn'),rini=fmtIni(g(st,'rini'));
+  if(a.empty)M.push('Add the sender.');
+  if(!subj)M.push('Add the subject or topic.');
+  if(!rsn)M.push('Add the surname of the person who received it.');
+  if(!date)M.push('Add the date it was sent.');
+  W.push('You need the sender\'s or receiver\'s permission before you quote an email or chat (POPIA). Keep a copy: your lecturer may want it as an annexure.');
+  var label=ty==='Email'?'Email to:':ty==='WhatsApp'?'Whatsapp:':'Teams:';
+  var ds=ty==='Email'?dayMonth(date):fmtDots(date);
+  var out=(a.empty?ph('sender'):a.ref)+' ('+y+'{{S}}) '+(subj?esc(subj):ph('subject'))+'. ['+label+'] '+(rsn?esc(rsn)+(rini?', '+rini:''):ph('receiver'))+(rini?'':'.')+' '+(ds||ph('date'))+'.';
+  return result(a,M,W,out,mkCites(a,subj||'subject',y,'',true),'',y,subj);
+}
+function bImage(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),md=g(st,'medium')||'Online image',fig=g(st,'fig')||'1';
+  if(a.empty)M.push('Add the creator or photographer, or choose "No author".');
+  if(!t)M.push('Add the title or description of the image.');
+  if(!g(st,'year'))W.push('No year yet. Use the year the image was made or published.');
+  W.push('Google Images, Pinterest, Bing, Unsplash and similar sites are not the source. Find and credit the original creator.');
+  W.push('Put image references in a separate image reference list after your main reference list.');
+  var title='<i>'+(t?esc(t):ph('title'))+'</i>';
+  var out=(a.none?title+' ('+y+'{{S}})':(a.empty?ph('creator'):a.ref)+' ('+y+'{{S}}) '+title)+' ['+esc(md)+'].'+onlineTail(st,M);
+  var nm=a.none?esc(t||'title'):(a.first||ph('creator'));
+  var cites=mkCites(a,t||'title',y,'',true);
+  cites.push({label:'Caption under the image (caption method)',html:'Figure '+esc(fig)+': '+nm+' ('+y+'{{S}}). '+(t?esc(t):ph('title'))+'.'});
+  cites.push({label:'Thumbnail method',note:'No caption is needed if a small copy of the image sits next to this entry in your image reference list.'});
+  return result(a,M,W,out,cites,'',y,t);
+}
+function bPodcast(st){
+  var a=authorBlock(st),M=[],W=[],y=yr(st),t=g(st,'title'),md=g(st,'medium')||'Podcast',bc=g(st,'broadcaster'),dm=dayMonth(g(st,'date'));
+  if(a.empty)M.push('Add the presenter or programme maker, or choose "No author".');
+  if(!t)M.push('Add the title of the programme or episode.');
+  if(!g(st,'year'))W.push('No year yet. Use the year it was released or broadcast.');
+  if(md==='Radio broadcast'&&!bc)W.push('Add the station or channel, for example BBC Radio 4.');
+  W.push('Use a time stamp instead of a page number, for example 12:10.');
+  var title='<i>'+(t?esc(t):ph('title'))+'</i>';
+  var out=(a.none?title+' ('+y+'{{S}})':(a.empty?ph('presenter'):a.ref)+' ('+y+'{{S}}) '+title)+' ['+esc(md)+'].';
+  var bits=(md==='Radio broadcast'?[bc?esc(bc):'',dm]:[dm]).filter(Boolean);
+  if(bits.length)out+=' '+bits.join(', ')+'.';
+  out+=optTail(st,M);
+  return result(a,M,W,out,mkCites(a,t||'title',y,locText(st.loc),true),'',y,t);
+}
+
+function build(st){
+  switch(st.type){
+    case 'news':return bNews(st);case 'gov':return bGov(st);case 'thesis':return bThesis(st);case 'lecture':return bLecture(st);
+    case 'email':return bEmail(st);case 'image':return bImage(st);case 'podcast':return bPodcast(st);
+    case 'book':return bBook(st);case 'chapter':return bChapter(st);case 'journal':return bJournal(st);
+    case 'web':return bWeb(st);case 'blog':return bBlog(st);case 'video':return bVideo(st);case 'ai':return bAI(st);
+  }
+}
+window.__h={build:build,newState:newState,strip:strip,authorBlock:authorBlock};
+
+/* ---------- form ---------- */
+var FIELDS={
+ book:[
+  {k:'year',l:'Year published',ph:'2023',h:HINT.year_book},
+  {k:'title',l:'Title (and subtitle)',full:1,ph:'An introduction to African politics',h:'Copy it exactly from the title page. Put a colon between title and subtitle.'},
+  {k:'edition',l:'Edition',ph:'5',h:HINT.edition},
+  {k:'publisher',l:'Publisher',ph:'Routledge',h:HINT.publisher},
+  {k:'online',t:'check',l:'I read it online (e-book or website)',full:1},
+  {k:'url',l:'Link or DOI',full:1,ph:'https://...',showIf:'online'},
+  {k:'acc',l:'Date you accessed it',t:'date',showIf:'online',h:HINT.acc}
+ ],
+ chapter:[
+  {k:'year',l:'Year published',ph:'2023',h:'The year of the book, from its copyright page.'},
+  {k:'chTitle',l:'Title of the chapter',full:1,ph:'Diversity in fashion illustration',h:'It is on the contents page and at the top of the chapter.'},
+  {k:'bookTitle',l:'Title of the book',full:1,ph:'Fashion education: the systemic revolution'},
+  {k:'edition',l:'Edition',ph:'',h:HINT.edition},
+  {k:'publisher',l:'Publisher',ph:'Intellect',h:HINT.publisher},
+  {k:'pages',l:'Pages of the chapter',ph:'140-159',h:HINT.chapter_pages}
+ ],
+ journal:[
+  {k:'year',l:'Year published',ph:'2020'},
+  {k:'title',l:'Title of the article',full:1,ph:'Futures for research in education'},
+  {k:'journal',l:'Name of the journal',full:1,ph:'Educational Philosophy and Theory'},
+  {k:'volume',l:'Volume',ph:'54',h:HINT.j_vol},
+  {k:'issue',l:'Issue',ph:'11'},
+  {k:'month',l:'Month (only if volume and issue are unknown)',ph:''},
+  {k:'pages',l:'Pages of the whole article',ph:'1732-1739',h:HINT.j_pages},
+  {k:'link',l:'DOI or link',full:1,ph:'10.1080/00131857.2020.1824781',h:HINT.j_link},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ],
+ web:[
+  {k:'year',l:'Year published or last updated',ph:'2024',h:HINT.web_year},
+  {k:'title',l:'Title of the page',full:1,ph:'',h:HINT.web_title},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...',h:'Copy it from your browser\'s address bar.'},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ],
+ blog:[
+  {k:'date',l:'Date posted',t:'date',h:HINT.blog_date},
+  {k:'title',l:'Title of the post',full:1,ph:'',h:HINT.blog_title},
+  {k:'platform',l:'Blog or platform name',ph:'FashionLady',h:HINT.platform},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...'},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ],
+ news:[
+  {k:'date',l:'Date of the newspaper',t:'date',h:'The full date printed on the paper or shown on the article.'},
+  {k:'title',l:'Headline',full:1,ph:'',h:'Copy the headline. Use only a capital letter for the first word and for names.'},
+  {k:'paper',l:'Name of the newspaper',ph:'The Mercury',h:'The name on the front page or the website header.'},
+  {k:'edition',l:'Edition (if shown)',ph:'Late edn',h:'Some papers print an edition, for example "Late edn". Leave blank if there is none.'},
+  {k:'pages',l:'Page(s) of the article',ph:'5',h:'The page number in the printed paper. Online articles have none, so leave it blank.'},
+  {k:'online',t:'check',l:'I read it online',full:1},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...',showIf:'online'},
+  {k:'acc',l:'Date you accessed it',t:'date',showIf:'online',h:HINT.acc}
+ ],
+ gov:[
+  {k:'year',l:'Year published',ph:'2011',h:'On the cover or the first page.'},
+  {k:'title',l:'Title of the document',full:1,ph:'National Development Plan 2030',h:'Copy it exactly from the cover.'},
+  {k:'series',l:'Series or report number (if any)',ph:'Report no. 12',h:'Some reports have a series and number. It goes in brackets after the title. Leave blank for Acts and most other documents.'},
+  {k:'short',l:'Short name for your in-text citation (optional)',ph:'South Africa',h:'The guide sometimes uses a shorter name in the text, for example South Africa or CHE. Use it only if your lecturer expects it.'},
+  {k:'publisher',l:'Publisher (optional)',ph:'Government Printer',h:'Who printed or published it. Leave blank if it is not shown.'},
+  {k:'online',t:'check',l:'I read it online',full:1},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...',showIf:'online'},
+  {k:'acc',l:'Date you accessed it',t:'date',showIf:'online',h:HINT.acc}
+ ],
+ thesis:[
+  {k:'year',l:'Year',ph:'2021',h:'On the title page.'},
+  {k:'title',l:'Title',full:1,ph:'',h:'Copy it from the title page. Sentence case.'},
+  {k:'ttype',l:'What is it?',t:'select',opts:['Thesis','Dissertation']},
+  {k:'qual',l:'Qualification',ph:"Master's in Education",h:'For example Master\'s in Education or PhD in Law. It is on the title page.'},
+  {k:'univ',l:'University',full:1,ph:'University of KwaZulu-Natal'},
+  {k:'online',t:'check',l:'I read it online',full:1},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...',showIf:'online'},
+  {k:'acc',l:'Date you accessed it',t:'date',showIf:'online',h:HINT.acc}
+ ],
+ lecture:[
+  {k:'year',l:'Year',ph:'2026',h:'The year the lecture or slides were made.'},
+  {k:'title',l:'Title of the slides or notes',full:1,ph:'',h:'The title on the first slide or the top of the notes.'},
+  {k:'medium',l:'What is it?',t:'select',opts:['Presentation slides','Lecture notes','Study guide','Recorded lecture']},
+  {k:'code',l:'Module code',ph:'LAW101',h:'Printed on your study guide or timetable.'},
+  {k:'modtitle',l:'Module title',full:1,ph:'Introduction to Law'},
+  {k:'inst',l:'Institution',ph:'STADIO'},
+  {k:'date',l:'Date (optional)',t:'date'},
+  {k:'url',l:'Link (optional)',full:1,ph:'https://...',h:'Fill this in only if it is on an online learning site. Leave blank for handouts.'},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ],
+ email:[
+  {k:'type',l:'What is it?',t:'select',opts:['Email','WhatsApp','Teams']},
+  {k:'date',l:'Date it was sent',t:'date'},
+  {k:'subject',l:'Subject (or the topic of the chat)',full:1,ph:''},
+  {k:'rsn',l:'Receiver surname',ph:'',h:'The person who received it. If you received it, use your own surname.'},
+  {k:'rini',l:'Receiver initials',ph:'J.',h:'For example J. or A.K.'}
+ ],
+ image:[
+  {k:'year',l:'Year the image was made',ph:'2019'},
+  {k:'title',l:'Title or description of the image',full:1,ph:''},
+  {k:'medium',l:'What is it?',t:'select',opts:['Online image','Photograph','Illustration','Infographic']},
+  {k:'fig',l:'Figure number',ph:'1',h:'The number of the figure in your assignment.'},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://...'},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ],
+ podcast:[
+  {k:'year',l:'Year',ph:'2024'},
+  {k:'title',l:'Title of the programme or episode',full:1,ph:''},
+  {k:'medium',l:'What is it?',t:'select',opts:['Podcast','Radio broadcast','Television programme']},
+  {k:'broadcaster',l:'Station or channel (radio and TV)',ph:'SAfm'},
+  {k:'date',l:'Date broadcast (optional)',t:'date'},
+  {k:'url',l:'Link (optional)',full:1,ph:'https://...'},
+  {k:'acc',l:'Date you accessed it',t:'date'}
+ ],
+ video:[
+  {k:'year',l:'Year uploaded',ph:'2019',h:HINT.v_year},
+  {k:'title',l:'Title of the video',full:1,ph:'South African boys singing Nomvula',h:'Copy the title exactly as shown on the video page.'},
+  {k:'url',l:'Link (URL)',full:1,ph:'https://www.youtube.com/watch?v=...'},
+  {k:'acc',l:'Date you accessed it',t:'date',h:HINT.acc}
+ ]
+};
+function hintHtml(t,txt){return txt?'<details class="hint"><summary>Where do I find this?</summary><p>'+esc(txt)+'</p></details>':''}
+function fieldHtml(d){
+  var id='f_'+d.k,path='f.'+d.k,val=s.f[d.k]||'';
+  if(d.showIf&&!s.f[d.showIf])return '';
+  if(d.t==='check')return '<div class="field full"><label class="check" for="'+id+'"><input type="checkbox" id="'+id+'" data-path="'+path+'"'+(s.f[d.k]?' checked':'')+' data-re="1"><span>'+esc(d.l)+'</span></label></div>';
+  if(d.t==='select')return '<div class="field'+(d.full?' full':'')+'"><label for="'+id+'">'+esc(d.l)+'</label><select id="'+id+'" data-path="'+path+'">'+d.opts.map(function(o){return '<option'+((s.f[d.k]||d.opts[0])===o?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select></div>';
+  return '<div class="field'+(d.full?' full':'')+'"><label for="'+id+'">'+esc(d.l)+'</label><input id="'+id+'" type="'+(d.t==='date'?'date':'text')+'" data-path="'+path+'" value="'+esc(val)+'" placeholder="'+esc(d.ph||'')+'" autocomplete="off">'+hintHtml('',d.h)+'</div>';
+}
+function personRows(key,label){
+  var arr=s[key],h='<div class="people">';
+  arr.forEach(function(p,i){
+    h+='<div class="person"><div class="field"><label for="'+key+'_sn'+i+'">'+label+' surname</label><input id="'+key+'_sn'+i+'" type="text" data-path="'+key+'.'+i+'.sn" value="'+esc(p.sn)+'" autocomplete="off"></div>'+
+       '<div class="field"><label for="'+key+'_in'+i+'">Initials</label><input id="'+key+'_in'+i+'" type="text" data-path="'+key+'.'+i+'.ini" value="'+esc(p.ini)+'" placeholder="J.K." autocomplete="off"></div>'+
+       (arr.length>1?'<button class="x" type="button" data-act="rm" data-key="'+key+'" data-i="'+i+'" aria-label="Remove this person">Remove</button>':'<span></span>')+'</div>';
+  });
+  return h+'<div><button class="btn ghost small" type="button" data-act="add" data-key="'+key+'">+ Add another</button></div></div>';
+}
+function authorHtml(){
+  var t=s.type,LAB={blog:'Author or username',video:'Creator or channel',chapter:'Author of the chapter',news:'Journalist',gov:'Government body or department',thesis:'Author',lecture:'Lecturer or presenter',email:'Sender',image:'Creator or photographer',podcast:'Presenter or programme maker'},lab=LAB[t]||'Author(s)';
+  var orgLab=t==='blog'?'Username or blog name':t==='video'?'Channel or organisation':t==='gov'?'Government body or department':'Organisation or company';
+  var h='<div class="field"><span class="lab">'+lab+'</span><div class="seg" role="radiogroup" aria-label="'+esc(lab)+'">'+
+   '<label><input type="radio" name="mode" value="persons" data-path="mode" data-re="1"'+(s.mode==='persons'?' checked':'')+'> Person(s)</label>'+
+   '<label><input type="radio" name="mode" value="org" data-path="mode" data-re="1"'+(s.mode==='org'?' checked':'')+'> '+esc(orgLab)+'</label>'+
+   (t==='blog'||t==='email'||t==='gov'?'':'<label><input type="radio" name="mode" value="none" data-path="mode" data-re="1"'+(s.mode==='none'?' checked':'')+'> No author</label>')+'</div></div>';
+  if(s.mode==='persons'){
+    h+=personRows('authors','Author');
+    if(t==='book')h+='<label class="check" for="isEd"><input type="checkbox" id="isEd" data-path="isEditor" data-re="1"'+(s.isEditor?' checked':'')+'><span>These people are the editors of the book, not the authors</span></label>';
+    h+=hintHtml('',HINT.authors);
+  }else if(s.mode==='org'){
+    h+='<div class="field"><label for="orgName">'+esc(orgLab)+'</label><input id="orgName" type="text" data-path="org" value="'+esc(s.org)+'" autocomplete="off">'+hintHtml('',t==='gov'?'Use the full name of the department, for example Department of Basic Education, exactly as on the cover.':t==='web'?HINT.web_author:t==='video'?HINT.v_author:'Use the name exactly as the source gives it. No full stop between the name and the year.')+'</div>';
+  }else{
+    h+='<p class="muted" style="color:var(--muted);font-size:.9rem">The title is used in place of the author, as the guide says.</p>';
+  }
+  return h;
+}
+function locHtml(){
+  if(s.type==='blog'||s.type==='email'||s.type==='image')return '';
+  var o=[['page','Page number(s)'],['para','Paragraph number'],['time','Time stamp'],['none','Whole source (no pin-point)']];
+  var h='<div class="row"><div class="field"><label for="locKind">Where in the source is your idea?</label><select id="locKind" data-path="loc.kind" data-re="1">'+
+    o.map(function(x){return '<option value="'+x[0]+'"'+(s.loc.kind===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select></div>';
+  if(s.loc.kind!=='none')h+='<div class="field"><label for="locVal">'+(s.loc.kind==='page'?'Page(s)':s.loc.kind==='para'?'Paragraph':'Time')+'</label><input id="locVal" type="text" data-path="loc.value" value="'+esc(s.loc.value)+'" placeholder="'+(s.loc.kind==='page'?'45':s.loc.kind==='para'?'2':'00:03:36')+'" autocomplete="off"></div>';
+  h+='</div>';
+  if(s.loc.kind==='page')h+='<label class="check" for="locCount"><input type="checkbox" id="locCount" data-path="loc.counted"'+(s.loc.counted?' checked':'')+'><span>The pages are not numbered, so I counted them (shown in square brackets)</span></label>'+hintHtml('',HINT.page);
+  if(s.loc.kind==='time')h+=hintHtml('',HINT.v_time);
+  return '<div><h3>For your in-text citation</h3>'+h+'</div>';
+}
+function aiFormHtml(){
+  var x=s.ai;
+  function inp(k,l,ph,type){return '<div class="field"><label for="ai_'+k+'">'+l+'</label><input id="ai_'+k+'" type="'+(type||'text')+'" data-path="ai.'+k+'" value="'+esc(x[k])+'" placeholder="'+esc(ph||'')+'" autocomplete="off"></div>'}
+  var h='<div class="msg warn"><b>Read this first.</b> The guide says AI is not a source you can reference. Using it is allowed only as far as the AI traffic light (AIMat) in your assessment brief says: red means none, amber means limited, green means allowed. You must declare how you used it.</div>';
+  h+='<div class="field"><span class="lab">What do you need to write?</span><div class="seg">'+
+   [['tool','Naming the tool'],['chat','A chat I had with it'],['image','An image it made']].map(function(m){return '<label><input type="radio" name="aimode" value="'+m[0]+'" data-path="ai.mode" data-re="1"'+(x.mode===m[0]?' checked':'')+'> '+m[1]+'</label>'}).join('')+'</div></div>';
+  h+='<div class="row">'+inp('tool','Name of the AI tool','ChatGPT')+inp('company','Company that makes it','OpenAI')+inp('date','Date you used it','', 'date')+'</div>';
+  if(x.mode==='tool')h+='<div class="row">'+inp('ver','Version (if shown)','4')+inp('url','Link to the tool','https://chat.openai.com/')+'</div>';
+  if(x.mode==='chat')h+='<div class="row">'+inp('sn','Your surname','')+inp('ini','Your initials','A.')+'</div>';
+  if(x.mode==='image')h+='<div class="row">'+inp('desc','What it made','Swopout event poster')+inp('full','Your full name','')+inp('fig','Figure number','1')+'</div>';
+  h+='<ul class="rules" style="grid-template-columns:1fr"><li>Never copy and paste AI text into your work. That is plagiarism.</li><li>Check every fact and every reference it gave you. AI can invent sources.</li><li>Keep screenshots of the whole chat and put them after your reference list.</li><li>Do not type other people\'s personal details into an AI tool.</li></ul>';
+  return h;
+}
+function renderTypes(){
+  document.getElementById('types').innerHTML=TYPES.map(function(t){return '<button class="type" type="button" data-type="'+t.id+'" aria-pressed="'+(s.type===t.id)+'"><b>'+esc(t.name)+'</b><span>'+esc(t.desc)+'</span></button>'}).join('');
+}
+function renderForm(){
+  var h;
+  if(s.type==='ai')h=aiFormHtml();
+  else{
+    h=authorHtml();
+    if(s.type==='chapter')h+='<div><h3>Editor(s) of the book</h3>'+personRows('eds','Editor')+hintHtml('',HINT.editors)+'</div>';
+    var fs=FIELDS[s.type],rows='';
+    fs.forEach(function(d){rows+=fieldHtml(d)});
+    h+='<div class="row">'+rows+'</div>'+locHtml();
+  }
+  document.getElementById('form').innerHTML=h;
+}
+
+/* ---------- preview ---------- */
+var lastBuilt=null;
+function lineHtml(l,i){
+  if(l.note)return '<div class="line"><div class="top"><h3>'+esc(l.label)+'</h3></div><p class="muted">'+esc(l.note)+'</p></div>';
+  return '<div class="line"><div class="top"><h3>'+esc(l.label)+'</h3><button class="btn ghost small" type="button" data-copy="'+i+'">Copy</button></div><div class="out">'+applyS(l.html,'')+'</div></div>';
+}
+function renderPreview(){
+  var b=build(s);lastBuilt=b;
+  var pv=document.getElementById('preview'),h='<div class="card" style="display:flex;flex-direction:column;gap:14px">';
+  var lines=b.cites.slice();
+  h+=lines.map(function(l,i){return lineHtml(l,'c'+i)}).join('');
+  h+='<div class="line"><div class="top"><h3>Reference list entry</h3><button class="btn ghost small" type="button" data-copy="ref">Copy</button></div><div class="out main">'+applyS(b.ref,'')+'</div></div>';
+  var dup=!b.ai&&b.cKey&&list.some(function(e){return e.cKey===b.cKey});
+  if(dup)b.W=b.W.concat(['You already have a source by this author in the same year. Add both: they will get a and b after the year, for example (Smit, 2015a).']);
+  var msgs='';
+  b.M.forEach(function(m){msgs+='<div class="msg need">Still needed: '+esc(m)+'</div>'});
+  b.W.forEach(function(m){msgs+='<div class="msg warn">Check: '+esc(m)+'</div>'});
+  if(!b.M.length&&!b.W.length)msgs='<div class="msg good">Everything the guide asks for is filled in.</div>';
+  h+='<div class="msgs">'+msgs+'</div>';
+  h+='<div class="actions"><button class="btn" type="button" id="addBtn"'+(b.M.length?' disabled':'')+'>Add to my reference list</button><button class="btn ghost" type="button" id="resetBtn">Start again</button></div></div>';
+  pv.innerHTML=h;
+}
+
+/* ---------- list ---------- */
+function suffixMap(sorted){
+  var groups={},map={};
+  sorted.forEach(function(e){if(e.cKey)(groups[e.cKey]=groups[e.cKey]||[]).push(e)});
+  Object.keys(groups).forEach(function(k){var gr=groups[k];if(gr.length>1)gr.forEach(function(e,i){map[e.id]=String.fromCharCode(97+i)})});
+  return map;
+}
+function sortedList(){return list.slice().sort(function(a,b){return a.sort<b.sort?-1:a.sort>b.sort?1:0})}
+function renderList(){
+  var el=document.getElementById('list');
+  if(!list.length){el.innerHTML='<p class="empty">Nothing here yet. Build a reference above and press "Add to my reference list". Your list sorts itself alphabetically.</p>';return}
+  var sl=sortedList(),sm=suffixMap(sl);
+  el.innerHTML=sl.map(function(e){
+    var sx=sm[e.id]||'';
+    var cites=e.cites.map(function(c){return c.note?'<p class="muted" style="font-size:.85rem;color:var(--muted)">'+esc(c.note)+'</p>':'<div class="line"><h3>'+esc(c.label)+'</h3><div class="out" style="padding:4px 0;background:transparent">'+applyS(c.html,sx)+'</div></div>'}).join('');
+    return '<div class="entry"><div class="out">'+applyS(e.ref,sx)+'</div><div class="meta"><span class="tag">'+esc(e.typeName)+'</span>'+(e.screens?'<span>Add chat screenshots after the reference list.</span>':'')+
+      '<button class="x" type="button" data-rm="'+esc(e.id)+'">Remove</button></div><details class="hint"><summary>How to cite this in your text</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">'+cites+'</div></details></div>';
+  }).join('');
+}
+function listHtml(){
+  var sl=sortedList(),sm=suffixMap(sl);
+  var h='<p style="font-family:Georgia,serif;font-size:13pt;font-weight:bold;text-align:left;margin:0 0 12pt">Reference list:</p>';
+  var t='Reference list:\n\n';
+  sl.forEach(function(e){var r=applyS(e.ref,sm[e.id]||'');h+='<p style="font-family:Georgia,serif;font-size:12pt;text-align:left;margin:0 0 12pt;line-height:1.15">'+r+'</p>';t+=strip(r)+'\n\n'});
+  return {html:h,text:t};
+}
+
+/* ---------- copy ---------- */
+function fallbackCopy(html){
+  var d=document.createElement('div');d.contentEditable='true';d.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';d.innerHTML=html;document.body.appendChild(d);
+  var r=document.createRange();r.selectNodeContents(d);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);
+  var ok=false;try{ok=document.execCommand('copy')}catch(e){}
+  sel.removeAllRanges();document.body.removeChild(d);return ok;
+}
+function flash(btn,ok){var o=btn.getAttribute('data-label')||btn.textContent;btn.setAttribute('data-label',o);btn.textContent=ok?'Copied':'Press Ctrl+C';setTimeout(function(){btn.textContent=o},1400)}
+function copyRich(html,text,btn){
+  function fb(){flash(btn,fallbackCopy(html))}
+  try{
+    if(navigator.clipboard&&window.ClipboardItem){
+      navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]).then(function(){flash(btn,true)},fb);
+    }else fb();
+  }catch(e){fb()}
+}
+
+/* ---------- events ---------- */
+function setPath(path,val){
+  var p=path.split('.'),o=s;
+  for(var i=0;i<p.length-1;i++){o=o[p[i]]}
+  o[p[p.length-1]]=val;
+}
+function onInput(ev){
+  var t=ev.target;if(!t.getAttribute)return;
+  var path=t.getAttribute('data-path');if(!path)return;
+  var v=t.type==='checkbox'?t.checked:t.value;
+  setPath(path,v);
+  if(t.getAttribute('data-re')){renderForm();}
+  renderPreview();
+}
+document.getElementById('form').addEventListener('input',onInput);
+document.getElementById('form').addEventListener('change',function(ev){if(ev.target.type==='radio'||ev.target.tagName==='SELECT')onInput(ev)});
+document.getElementById('form').addEventListener('click',function(ev){
+  var b=ev.target.closest('button[data-act]');if(!b)return;
+  var key=b.getAttribute('data-key'),act=b.getAttribute('data-act');
+  if(act==='add')s[key].push({sn:'',ini:''});
+  if(act==='rm')s[key].splice(parseInt(b.getAttribute('data-i'),10),1);
+  renderForm();renderPreview();
+});
+document.getElementById('types').addEventListener('click',function(ev){
+  var b=ev.target.closest('button[data-type]');if(!b)return;
+  s=newState(b.getAttribute('data-type'));renderTypes();renderForm();renderPreview();
+});
+document.getElementById('preview').addEventListener('click',function(ev){
+  var b=ev.target.closest('button');if(!b)return;
+  if(b.id==='resetBtn'){s=newState(s.type);renderForm();renderPreview();return}
+  if(b.id==='addBtn'){
+    var r=lastBuilt;if(!r||r.M.length)return;
+    var tn=(TYPES.filter(function(t){return t.id===s.type})[0]||{}).name||'';
+    if(s.type==='ai')tn='AI use';
+    list.push({id:String(Date.now())+Math.random().toString(36).slice(2,6),type:s.type,typeName:tn,ref:r.ref,cites:r.cites,sort:r.sort,cKey:r.cKey,screens:!!(r.ai&&s.ai.mode!=='tool')});
+    saveList();renderList();s=newState(s.type);renderForm();renderPreview();
+    b=null;return;
+  }
+  var c=b.getAttribute('data-copy');if(!c)return;
+  var html=c==='ref'?lastBuilt.ref:lastBuilt.cites[parseInt(c.slice(1),10)].html;
+  html=applyS(html,'');
+  copyRich('<span style="font-family:Georgia,serif;font-size:12pt">'+html+'</span>',strip(html),b);
+});
+document.getElementById('list').addEventListener('click',function(ev){
+  var b=ev.target.closest('button[data-rm]');if(!b)return;
+  var id=b.getAttribute('data-rm');list=list.filter(function(e){return e.id!==id});saveList();renderList();renderPreview();
+});
+document.getElementById('copyList').addEventListener('click',function(ev){
+  if(!list.length)return;var o=listHtml();copyRich(o.html,o.text,ev.currentTarget);
+});
+var clearArmed=false,clearTimer=null;
+document.getElementById('clearList').addEventListener('click',function(ev){
+  var b=ev.currentTarget;
+  if(!list.length)return;
+  if(!clearArmed){clearArmed=true;b.textContent='Click again to clear';clearTimer=setTimeout(function(){clearArmed=false;b.textContent='Clear list'},3000);return}
+  clearTimeout(clearTimer);clearArmed=false;b.textContent='Clear list';list=[];saveList();renderList();renderPreview();
+});
+
+/* ---------- fill the form from a link, DOI or ISBN ---------- */
+var PROXY='https://api.allorigins.win/raw?url=';
+var lookEl=document.getElementById('lookInput'),lookBtn=document.getElementById('lookBtn'),lookStat=document.getElementById('lookStatus');
+function say(msg,kind){lookStat.textContent=msg;lookStat.className='msg '+(kind||'good');lookStat.hidden=!msg}
+function fetchT(url,ms){
+  var c=new AbortController(),t=setTimeout(function(){c.abort()},ms||12000);
+  return fetch(url,{signal:c.signal}).then(function(r){clearTimeout(t);return r},function(e){clearTimeout(t);throw e});
+}
+function getJson(url){return fetchT(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+function year4(x){var m=String(x||'').match(/\b(1[5-9]\d\d|20\d\d)\b/);return m?m[1]:''}
+function cleanTitle(t){return strip(String(t||'')).replace(/\s+/g,' ').trim()}
+function splitName(n){
+  n=String(n||'').replace(/\(.*?\)/g,'').replace(/,?\s*(Jr|Sr|PhD|MD)\.?$/i,'').trim();
+  if(!n)return {sn:'',ini:''};
+  if(n.indexOf(',')>0){var p=n.split(',');return {sn:p[0].trim(),ini:givenToIni(p.slice(1).join(' '))}}
+  var w=n.split(/\s+/);
+  if(w.length===1)return {sn:w[0],ini:''};
+  var sn=w.pop();
+  while(w.length>1&&/^(van|von|de|der|den|du|la|le|di|da|al|bin|ibn)$/i.test(w[w.length-1]))sn=w.pop()+' '+sn;
+  return {sn:sn,ini:givenToIni(w.join(' '))};
+}
+function givenToIni(g){return String(g||'').split(/[\s\-.]+/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+'.'}).join('')}
+function peopleFrom(list){return list.map(splitName).filter(function(p){return p.sn})}
+var ORG_WORDS=/\b(inc|ltd|llc|pty|department|university|college|news|times|council|ministry|group|team|staff|press|institute|association|foundation|government|agency|company|corporation|bureau|commission|organisation|organization)\b/i;
+
+function fromCrossref(doi){
+  return getJson('https://api.crossref.org/works/'+encodeURIComponent(doi)).then(function(j){
+    var m=j.message||{},t=m.type||'';
+    var dp=(m.issued||m['published-print']||m['published-online']||{})['date-parts'];
+    var y=dp&&dp[0]&&dp[0][0]?String(dp[0][0]):'';
+    var title=cleanTitle((m.title||[])[0]);
+    if(m.subtitle&&m.subtitle[0])title+=': '+cleanTitle(m.subtitle[0]);
+    var container=cleanTitle((m['container-title']||[])[0]);
+    var au=(m.author||[]),eds=(m.editor||[]);
+    function ppl(list){return list.filter(function(a){return a.family}).map(function(a){return {sn:a.family,ini:givenToIni(a.given||'')}})}
+    var r={authors:ppl(au),f:{year:y,title:title}};
+    if(!r.authors.length&&au.length&&au[0].name){r.mode='org';r.org=au[0].name}
+    if(/^(book|monograph|edited-book|reference-book|book-set)$/.test(t)){
+      r.type='book';r.f.publisher=m.publisher||'';
+      if(m['edition-number'])r.f.edition=String(m['edition-number']);
+      if(!r.authors.length&&eds.length){r.authors=ppl(eds);r.isEditor=true}
+    }else if(t==='book-chapter'){
+      r.type='chapter';r.f.chTitle=title;r.f.title='';r.f.bookTitle=container;r.f.publisher=m.publisher||'';r.f.pages=m.page||'';
+      r.eds=ppl(eds);
+    }else{
+      r.type='journal';r.f.journal=container;r.f.volume=m.volume||'';r.f.issue=m.issue||'';r.f.pages=m.page||m['article-number']||'';
+      r.f.link='https://doi.org/'+(m.DOI||doi);
+    }
+    return r;
+  });
+}
+function fromIsbn(isbn){
+  return getJson('https://openlibrary.org/api/books?bibkeys=ISBN:'+isbn+'&format=json&jscmd=data').then(function(j){
+    var d=j['ISBN:'+isbn];if(!d)throw new Error('none');
+    return {type:'book',authors:peopleFrom((d.authors||[]).map(function(a){return a.name})),
+      f:{year:year4(d.publish_date),title:cleanTitle(d.title+(d.subtitle?': '+d.subtitle:'')),publisher:((d.publishers||[])[0]||{}).name||''}};
+  }).catch(function(){
+    return getJson('https://www.googleapis.com/books/v1/volumes?q=isbn:'+isbn).then(function(j){
+      var v=j.items&&j.items[0]&&j.items[0].volumeInfo;if(!v)throw new Error('none');
+      return {type:'book',authors:peopleFrom(v.authors||[]),
+        f:{year:year4(v.publishedDate),title:cleanTitle(v.title+(v.subtitle?': '+v.subtitle:'')),publisher:v.publisher||''}};
+    });
+  });
+}
+function cleanYt(u){
+  var m=u.match(/youtu\.be\/([\w-]{6,})/)||u.match(/[?&]v=([\w-]{6,})/)||u.match(/youtube\.com\/(?:shorts|embed)\/([\w-]{6,})/);
+  return m?'https://www.youtube.com/watch?v='+m[1]:u;
+}
+function fromYouTube(url){
+  var clean=cleanYt(url);
+  return getJson('https://noembed.com/embed?url='+encodeURIComponent(clean)).then(function(j){
+    if(!j.title)throw new Error('none');
+    return {type:'video',mode:'org',org:j.author_name||'',f:{title:cleanTitle(j.title),url:clean}};
+  });
+}
+function ldItems(doc){
+  var out=[];
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(function(sc){
+    try{(function walk(x){if(Array.isArray(x))return x.forEach(walk);if(x&&typeof x==='object'){out.push(x);if(x['@graph'])walk(x['@graph'])}})(JSON.parse(sc.textContent))}catch(e){}
+  });
+  return out;
+}
+function esc2(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function parsePage(html,url){
+  var doc=new DOMParser().parseFromString(html,'text/html');
+  function meta(){
+    for(var i=0;i<arguments.length;i++){
+      var e=doc.querySelector('meta[name="'+arguments[i]+'"],meta[property="'+arguments[i]+'"],meta[itemprop="'+arguments[i]+'"]');
+      if(e&&e.getAttribute('content')&&e.getAttribute('content').trim())return e.getAttribute('content').trim();
+    }
+    return '';
+  }
+  var doi=meta('citation_doi');
+  if(!doi){var di=meta('dc.identifier','DC.Identifier');if(/10\.\d{4,9}\//.test(di))doi=di}
+  var dm=doi.match(/10\.\d{4,9}\/[^\s"<>]+/);
+  var ld=ldItems(doc),art=ld.filter(function(x){return x.datePublished||x.headline||x.author})[0]||{};
+  var names=[].slice.call(doc.querySelectorAll('meta[name="citation_author"]')).map(function(e){return e.getAttribute('content')});
+  if(!names.length){
+    var a1=meta('author','article:author','dc.creator','DC.creator');
+    if(a1&&!/^https?:/i.test(a1))names=[a1];
+  }
+  if(!names.length&&art.author){
+    var al=Array.isArray(art.author)?art.author:[art.author];
+    names=al.map(function(a){return typeof a==='string'?a:(a&&a.name)||''});
+  }
+  names=names.filter(function(n){return n&&n.length<80&&!/^https?:/i.test(n)});
+  var host=''; try{host=new URL(url).hostname.replace(/^www\./,'')}catch(e){}
+  var site=meta('og:site_name','application-name')||host;
+  var title=meta('citation_title','og:title','twitter:title')||(doc.title||'');
+  title=cleanTitle(title);
+  if(site)title=title.replace(new RegExp('\\s*[|\\u2013\\u2014-]\\s*'+esc2(site)+'\\s*$','i'),'');
+  var y=year4(meta('citation_publication_date','citation_date','article:published_time','og:article:published_time','datePublished','dc.date','DC.date','dcterms.created'))||year4(art.datePublished)||year4(meta('article:modified_time','og:updated_time'))||year4(art.dateModified);
+  var r={type:'web',f:{year:y,title:title,url:url},doi:dm?dm[0].replace(/[.,;]+$/,''):''};
+  var personNames=names.filter(function(n){return !ORG_WORDS.test(n)});
+  if(personNames.length&&personNames.length===names.length){r.authors=peopleFrom(personNames)}
+  else{r.mode='org';r.org=names.length===1?names[0]:site}
+  return r;
+}
+function fromPage(url){
+  return fetchT(PROXY+encodeURIComponent(url),15000).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(html){
+    if(!html||html.length<200)throw new Error('empty');
+    return parsePage(html,url);
+  });
+}
+function applyResult(r,label){
+  var st=newState(r.type);
+  if(r.mode==='org'){st.mode='org';st.org=r.org||''}
+  else if(r.authors&&r.authors.length){st.mode='persons';st.authors=r.authors}
+  if(r.isEditor)st.isEditor=true;
+  if(r.eds&&r.eds.length)st.eds=r.eds;
+  Object.keys(r.f||{}).forEach(function(k){if(r.f[k])st.f[k]=r.f[k]});
+  s=st;renderTypes();renderForm();renderPreview();
+  var b=lastBuilt,need=b.M.length?' Still missing: '+b.M.map(function(m){return m.replace(/^Add (the )?/,'').replace(/\.$/,'')}).join('; ')+'.':'';
+  say('Filled in from '+label+'. Check every box against the real source before you add it.'+need,b.M.length?'warn':'good');
+  try{document.getElementById('types').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}catch(e){}
+}
+function fail(raw,type,extra){
+  s=newState(type);if(type==='web'||type==='video')s.f.url=raw;
+  renderTypes();renderForm();renderPreview();
+  say(extra,'warn');
+}
+function lookup(){
+  var raw=lookEl.value.trim();
+  if(!raw){say('Paste a link, a DOI or an ISBN first.','warn');return}
+  var digits=raw.replace(/[\s-]/g,''),doiM=raw.match(/10\.\d{4,9}\/[^\s"<>]+/);
+  var isDoi=doiM&&(/^(doi:\s*)?10\./i.test(raw)||/^https?:\/\/(dx\.)?doi\.org\//i.test(raw));
+  var isIsbn=/^(97[89])?\d{9}[\dXx]$/.test(digits)&&!/[A-WYZa-wyz]/.test(raw);
+  var isYt=/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(raw);
+  var isUrl=/^https?:\/\//i.test(raw);
+  lookBtn.disabled=true;say('Looking it up…','good');
+  var done=function(){lookBtn.disabled=false};
+  if(isDoi){
+    var doi=doiM[0].replace(/[.,;]+$/,'');
+    fromCrossref(doi).then(function(r){applyResult(r,'Crossref (the DOI registry)')},function(){fail(raw,'journal','I could not find that DOI. Check it for typing mistakes, or fill in the boxes by hand.')}).then(done,done);
+  }else if(isIsbn){
+    fromIsbn(digits).then(function(r){applyResult(r,'the book catalogue')},function(){fail(raw,'book','I could not find a book with that ISBN. Check the number, or fill in the boxes by hand.')}).then(done,done);
+  }else if(isYt){
+    fromYouTube(raw).then(function(r){applyResult(r,'the video page')},function(){fail(raw,'video','I could not read that video. The link has been put in for you: add the title, channel and year by hand.')}).then(done,done);
+  }else if(isUrl){
+    fromPage(raw).then(function(r){
+      if(r.doi){
+        return fromCrossref(r.doi).then(function(c){applyResult(c,'the DOI registry (this page is a journal article)')},function(){applyResult(r,'the web page')});
+      }
+      applyResult(r,'the web page');
+    },function(){fail(raw,'web','I could not read that page. Some websites block automatic reading. The link has been put in for you: add the title, author and year by hand.')}).then(done,done);
+  }else{
+    say('That does not look like a link, a DOI or an ISBN. A link starts with https://, a DOI starts with 10., an ISBN is 10 or 13 digits.','warn');done();
+  }
+}
+lookBtn.addEventListener('click',lookup);
+lookEl.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();lookup()}});
+window.__h.parsePage=parsePage;
+
+renderTypes();renderForm();renderPreview();renderList();
+})();
+</script>
+</body>
+</html>
